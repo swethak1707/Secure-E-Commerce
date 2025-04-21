@@ -1,12 +1,12 @@
-// src/pages/PaymentSuccessPage.jsx
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase.config';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { generateReceipt } from '../components/ReceiptGenerator';
 
 const PaymentSuccessPage = () => {
   const location = useLocation();
@@ -15,6 +15,7 @@ const PaymentSuccessPage = () => {
   const { clearCart } = useCart();
   
   const [order, setOrder] = useState(null);
+  const [receipt, setReceipt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -22,6 +23,7 @@ const PaymentSuccessPage = () => {
     const searchParams = new URLSearchParams(location.search);
     const orderId = searchParams.get('order_id');
     const paymentIntentId = searchParams.get('payment_intent');
+    const receiptId = searchParams.get('receipt_id');
     
     const fetchOrderDetails = async () => {
       if (!orderId) {
@@ -60,6 +62,30 @@ const PaymentSuccessPage = () => {
         
         setOrder(orderData);
         
+        // Get receipt if available
+        if (receiptId) {
+          const receiptDoc = await getDoc(doc(db, 'receipts', receiptId));
+          if (receiptDoc.exists()) {
+            setReceipt({
+              id: receiptDoc.id,
+              ...receiptDoc.data()
+            });
+          }
+        } else {
+          // Try to find receipt by order ID
+          const receiptsRef = collection(db, 'receipts');
+          const q = query(receiptsRef, where('orderId', '==', orderId));
+          const querySnapshot = await getDocs(q);
+          
+          if (!querySnapshot.empty) {
+            const receiptData = querySnapshot.docs[0].data();
+            setReceipt({
+              id: querySnapshot.docs[0].id,
+              ...receiptData
+            });
+          }
+        }
+        
         // Clear the cart since payment is successful
         clearCart();
       } catch (err) {
@@ -73,6 +99,13 @@ const PaymentSuccessPage = () => {
     fetchOrderDetails();
   }, [location.search, clearCart]);
   
+  // Handle receipt download
+  const handleDownloadReceipt = () => {
+    if (order) {
+      generateReceipt(order);
+    }
+  };
+  
   // Format date
   const formatDate = (timestamp) => {
     if (!timestamp) return '';
@@ -81,10 +114,12 @@ const PaymentSuccessPage = () => {
       ? timestamp 
       : timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
+    return date.toLocaleString('en-US', {
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
   
@@ -254,6 +289,19 @@ const PaymentSuccessPage = () => {
                   <p className="text-lg font-bold text-gray-900">Total</p>
                   <p className="text-lg font-bold text-gray-900">${order.total.toFixed(2)}</p>
                 </div>
+              </div>
+              
+              {/* Receipt Download Button */}
+              <div className="mt-8 text-center">
+                <button
+                  onClick={handleDownloadReceipt}
+                  className="inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                >
+                  <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Download Receipt
+                </button>
               </div>
             </div>
           </div>

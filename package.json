@@ -7,13 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "codespaces": "vite build && node server.js"
+    "codespaces": "node codespaces-api.js & vite"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^3.6.0",
     "@stripe/stripe-js": "^7.1.0",
     "firebase": "^11.6.0",
     "firebase-admin": "^13.2.0",
+    "jspdf": "^3.0.1",
+    "jspdf-autotable": "^5.0.2",
     "micro": "^10.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

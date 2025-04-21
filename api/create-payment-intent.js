@@ -1,41 +1,48 @@
-const createPaymentIntent = async (amount, metadata = {}) => {
-  setProcessing(true);
-  setError(null);
-  
+// api/create-payment-intent.js
+import Stripe from 'stripe';
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    console.log(`Creating payment intent for amount: $${amount}`);
+    // Initialize Stripe with the secret key
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     
-    // Use a relative URL that works in any environment
-    const response = await fetch('/api/create-payment-intent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        amount, 
-        currency: 'usd',
-        metadata 
-      }),
-    });
+    // Get data from the request body
+    const { amount, currency = 'usd', metadata = {} } = req.body;
     
-    // Handle non-OK responses
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Payment service error: ${response.status} ${errorText}`);
+    // Validate the amount
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ error: 'Valid amount is required' });
     }
     
-    // Parse JSON response
-    const data = await response.json();
-    console.log('Payment intent created successfully');
+    console.log(`Creating payment intent for $${amount}`);
     
-    setClientSecret(data.clientSecret);
-    setPaymentIntentId(data.paymentIntentId);
-    return data;
+    // Create a PaymentIntent with the order amount and currency
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Convert to cents for Stripe
+      currency,
+      metadata,
+      payment_method_types: ['card'], // Explicitly specify card only
+    });
+    
+    console.log(`Payment intent created: ${paymentIntent.id}`);
+    
+    // Return the client secret so the frontend can use it
+    res.status(200).json({
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+    });
   } catch (error) {
     console.error('Error creating payment intent:', error);
-    setError(error.message || 'An error occurred while creating your payment.');
-    throw error;
-  } finally {
-    setProcessing(false);
+    
+    // Send a more detailed error message
+    res.status(500).json({ 
+      error: error.message || 'Payment service error', 
+      code: error.code,
+      type: error.type
+    });
   }
-};
+}

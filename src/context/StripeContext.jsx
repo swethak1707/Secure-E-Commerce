@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 
@@ -6,7 +6,6 @@ import { Elements } from '@stripe/react-stripe-js';
 const StripeContext = createContext();
 
 // Get the Stripe publishable key from environment variables
-// In Vite, we use import.meta.env instead of process.env
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 if (!stripePublishableKey) {
   console.error('Missing Stripe publishable key. Please check your environment variables.');
@@ -49,40 +48,27 @@ export const StripeProvider = ({ children }) => {
         body: JSON.stringify({ 
           amount, 
           currency: 'usd',
-          metadata 
+          metadata,
+          payment_method_types: ['card'] // Explicitly specify card only
         }),
       });
       
       // Handle response errors
       if (!response.ok) {
-        let errorMessage;
-        try {
-          // Try to parse as JSON
-          const errorData = await response.json();
-          errorMessage = errorData.error || `HTTP error! Status: ${response.status}`;
-        } catch {
-          // If not JSON, use text response
-          const errorText = await response.text();
-          errorMessage = errorText || `HTTP error! Status: ${response.status}`;
-        }
-        throw new Error(errorMessage);
+        const errorText = await response.text();
+        throw new Error(`Payment service error: ${response.status} ${errorText}`);
       }
       
       // Parse JSON response
       const data = await response.json();
-      console.log('Payment intent created successfully');
-      
-      // Validate response data
-      if (!data || !data.clientSecret) {
-        throw new Error('Invalid response from payment server');
-      }
+      console.log('Payment intent created successfully', data);
       
       setClientSecret(data.clientSecret);
       setPaymentIntentId(data.paymentIntentId);
       return data;
     } catch (error) {
       console.error('Error creating payment intent:', error);
-      setError(error.message || 'An error occurred while creating your payment. Please try again.');
+      setError(error.message || 'An error occurred while creating your payment.');
       throw error;
     } finally {
       setProcessing(false);
@@ -109,7 +95,7 @@ export const StripeProvider = ({ children }) => {
         colorText: '#30313d',
       },
     },
-  } : {};
+  } : null;
 
   // Value to be provided by the context
   const value = {
