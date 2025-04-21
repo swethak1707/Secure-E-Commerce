@@ -6,10 +6,10 @@ import {
 } from '@stripe/react-stripe-js';
 import { useStripe } from '../context/StripeContext';
 import { useNavigate } from 'react-router-dom';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase.config';
 
-const PaymentForm = ({ orderId, total }) => {
+const PaymentForm = ({ orderId, total, shippingDetails }) => {
   const stripe = useStripeJs();
   const elements = useElements();
   const { handlePaymentSuccess, error: stripeContextError, processing } = useStripe();
@@ -46,23 +46,39 @@ const PaymentForm = ({ orderId, total }) => {
       });
 
       if (submitError) {
+        console.error('Payment confirmation error:', submitError);
         setError(submitError.message);
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         // Payment succeeded without redirect - update order in Firestore
         try {
           const orderRef = doc(db, 'orders', orderId);
-          await updateDoc(orderRef, {
+          const orderData = {
             status: 'paid',
             paymentIntentId: paymentIntent.id,
-            updatedAt: new Date()
-          });
+            updatedAt: serverTimestamp()
+          };
+          
+          await updateDoc(orderRef, orderData);
+          console.log("Order updated with payment information");
+          
+          // Get the order details to pass to the success page
+          const orderDoc = await getDoc(orderRef);
+          if (orderDoc.exists()) {
+            const fullOrderData = {
+              id: orderDoc.id,
+              ...orderDoc.data()
+            };
+            
+            // Handle successful payment
+            handlePaymentSuccess(fullOrderData);
+          } else {
+            handlePaymentSuccess();
+          }
         } catch (dbError) {
           console.error('Error updating order status:', dbError);
           // Continue anyway as payment was successful
+          handlePaymentSuccess();
         }
-        
-        // Handle successful payment
-        handlePaymentSuccess();
         
         // Navigate to success page
         navigate(`/payment-success?order_id=${orderId}&payment_intent=${paymentIntent.id}`);

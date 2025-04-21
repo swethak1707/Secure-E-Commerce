@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../firebase.config';
-import { collection, getDocs, query, where, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, updateDoc, getDoc } from 'firebase/firestore';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -8,21 +8,29 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserDetails, setShowUserDetails] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState({ loading: false, error: null, success: false });
 
   // Fetch users from Firestore
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        // Only fetch users (not admins) as requested
+        setIsLoading(true);
+        
+        // Query to get all users with role 'user'
+        const usersRef = collection(db, 'users');
         const usersQuery = query(
-          collection(db, 'users'),
+          usersRef,
           where('role', '==', 'user')
         );
         
-        const usersSnapshot = await getDocs(usersQuery);
-        const usersList = usersSnapshot.docs.map(doc => ({
+        const querySnapshot = await getDocs(usersQuery);
+        
+        // Process the results
+        const usersList = querySnapshot.docs.map(doc => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
+          // Ensure isActive property exists with a default value
+          isActive: doc.data().isActive === false ? false : true
         }));
         
         setUsers(usersList);
@@ -46,17 +54,38 @@ const UserManagement = () => {
   });
 
   // View user details
-  const handleViewUser = (user) => {
-    setSelectedUser(user);
-    setShowUserDetails(true);
+  const handleViewUser = async (user) => {
+    try {
+      // Get fresh user data to ensure we have the latest
+      const userRef = doc(db, 'users', user.id);
+      const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists()) {
+        const userData = {
+          id: userDoc.id,
+          ...userDoc.data(),
+          // Ensure isActive property exists
+          isActive: userDoc.data().isActive === false ? false : true
+        };
+        setSelectedUser(userData);
+        setShowUserDetails(true);
+      } else {
+        console.error('User document not found');
+      }
+    } catch (error) {
+      console.error('Error getting user details:', error);
+    }
   };
 
   // Toggle user active status
   const handleToggleActive = async (userId, currentStatus) => {
     try {
+      setUpdateStatus({ loading: true, error: null, success: false });
+      
       const userRef = doc(db, 'users', userId);
       await updateDoc(userRef, {
-        isActive: !currentStatus
+        isActive: !currentStatus,
+        updatedAt: new Date().toISOString()
       });
       
       // Update local state
@@ -71,9 +100,16 @@ const UserManagement = () => {
           isActive: !currentStatus
         });
       }
+      
+      setUpdateStatus({ loading: false, error: null, success: true });
+      
+      // Reset success state after 3 seconds
+      setTimeout(() => {
+        setUpdateStatus(prev => ({ ...prev, success: false }));
+      }, 3000);
     } catch (error) {
       console.error('Error updating user status:', error);
-      alert('Failed to update user status. Please try again.');
+      setUpdateStatus({ loading: false, error: 'Failed to update user status', success: false });
     }
   };
 
@@ -81,14 +117,22 @@ const UserManagement = () => {
   const formatDate = (timestamp) => {
     if (!timestamp) return 'N/A';
     
-    const date = new Date(timestamp);
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      const date = typeof timestamp === 'object' && timestamp.toDate 
+        ? timestamp.toDate() 
+        : new Date(timestamp);
+        
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
   };
 
   return (
@@ -114,6 +158,19 @@ const UserManagement = () => {
           </div>
         </div>
       </div>
+
+      {/* Status messages */}
+      {updateStatus.error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md">
+          {updateStatus.error}
+        </div>
+      )}
+      
+      {updateStatus.success && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-600 rounded-md">
+          User status updated successfully!
+        </div>
+      )}
 
       {/* User list */}
       {isLoading ? (
@@ -197,11 +254,20 @@ const UserManagement = () => {
                     </button>
                     <button
                       onClick={() => handleToggleActive(user.id, user.isActive)}
+                      disabled={updateStatus.loading}
                       className={`${
-                        user.isActive === false ? 'text-green-600 hover:text-green-900' : 'text-red-600 hover:text-red-900'
+                        updateStatus.loading
+                          ? 'text-gray-400 cursor-not-allowed'
+                          : user.isActive === false
+                            ? 'text-green-600 hover:text-green-900'
+                            : 'text-red-600 hover:text-red-900'
                       }`}
                     >
-                      {user.isActive === false ? 'Activate' : 'Deactivate'}
+                      {updateStatus.loading && updateStatus.userId === user.id
+                        ? 'Updating...'
+                        : user.isActive === false
+                          ? 'Activate'
+                          : 'Deactivate'}
                     </button>
                   </td>
                 </tr>
@@ -266,9 +332,9 @@ const UserManagement = () => {
                 <p className="text-base text-gray-900">
                   {selectedUser.address ? (
                     <>
-                      {selectedUser.address.street}<br />
-                      {selectedUser.address.city}, {selectedUser.address.state} {selectedUser.address.zip}<br />
-                      {selectedUser.address.country}
+                      {selectedUser.address.street || 'N/A'}<br />
+                      {selectedUser.address.city || 'N/A'}, {selectedUser.address.state || 'N/A'} {selectedUser.address.zipCode || 'N/A'}<br />
+                      {selectedUser.address.country || 'N/A'}
                     </>
                   ) : (
                     'No address provided'
@@ -285,13 +351,20 @@ const UserManagement = () => {
                 </button>
                 <button
                   onClick={() => handleToggleActive(selectedUser.id, selectedUser.isActive)}
+                  disabled={updateStatus.loading}
                   className={`px-4 py-2 rounded-md text-white ${
-                    selectedUser.isActive === false 
-                      ? 'bg-green-600 hover:bg-green-700' 
-                      : 'bg-red-600 hover:bg-red-700'
+                    updateStatus.loading
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : selectedUser.isActive === false 
+                        ? 'bg-green-600 hover:bg-green-700' 
+                        : 'bg-red-600 hover:bg-red-700'
                   }`}
                 >
-                  {selectedUser.isActive === false ? 'Activate User' : 'Deactivate User'}
+                  {updateStatus.loading
+                    ? 'Processing...'
+                    : selectedUser.isActive === false
+                      ? 'Activate User'
+                      : 'Deactivate User'}
                 </button>
               </div>
             </div>

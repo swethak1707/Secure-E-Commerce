@@ -79,7 +79,7 @@ function App() {
                 {/* Protected Admin Routes */}
                 <Route path="/admin/dashboard" element={
                   <AdminRoute>
-                    <AdminDashboard />
+                    <AdminDashboard activeTab="dashboard" />
                   </AdminRoute>
                 } />
                 <Route path="/admin/products" element={
@@ -90,6 +90,11 @@ function App() {
                 <Route path="/admin/users" element={
                   <AdminRoute>
                     <AdminDashboard activeTab="users" />
+                  </AdminRoute>
+                } />
+                <Route path="/admin/chat" element={
+                  <AdminRoute>
+                    <AdminDashboard activeTab="chat" />
                   </AdminRoute>
                 } />
                 <Route path="/admin/settings" element={

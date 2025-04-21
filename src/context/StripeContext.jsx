@@ -21,6 +21,7 @@ export const StripeProvider = ({ children }) => {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [succeeded, setSucceeded] = useState(false);
+  const [orderDetails, setOrderDetails] = useState(null);
 
   // Reset payment state
   const resetPayment = () => {
@@ -29,6 +30,7 @@ export const StripeProvider = ({ children }) => {
     setProcessing(false);
     setError(null);
     setSucceeded(false);
+    setOrderDetails(null);
   };
 
   // Create a payment intent with the API
@@ -37,6 +39,8 @@ export const StripeProvider = ({ children }) => {
     setError(null);
     
     try {
+      console.log(`Creating payment intent for amount: $${amount}`);
+      
       const response = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: {
@@ -49,7 +53,7 @@ export const StripeProvider = ({ children }) => {
         }),
       });
       
-      // Check if response is OK
+      // Handle response errors
       if (!response.ok) {
         let errorMessage;
         try {
@@ -66,6 +70,7 @@ export const StripeProvider = ({ children }) => {
       
       // Parse JSON response
       const data = await response.json();
+      console.log('Payment intent created successfully');
       
       // Validate response data
       if (!data || !data.clientSecret) {
@@ -85,9 +90,12 @@ export const StripeProvider = ({ children }) => {
   };
 
   // Handle successful payment
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (orderData = null) => {
     setSucceeded(true);
     setProcessing(false);
+    if (orderData) {
+      setOrderDetails(orderData);
+    }
   };
 
   // Set up Stripe elements options
@@ -112,7 +120,9 @@ export const StripeProvider = ({ children }) => {
     error,
     succeeded,
     paymentIntentId,
-    clientSecret
+    clientSecret,
+    orderDetails,
+    setOrderDetails
   };
 
   return (

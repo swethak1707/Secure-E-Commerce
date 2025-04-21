@@ -61,7 +61,7 @@ const Navbar = () => {
           <div className="hidden md:flex md:items-center md:space-x-8">
             <Link to="/" className="text-gray-700 hover:text-purple-600 transition-colors">Home</Link>
             <Link to="/products" className="text-gray-700 hover:text-purple-600 transition-colors">Products</Link>
-            <Link to="/support" className="text-gray-700 hover:text-purple-600 transition-colors">Chat</Link>
+            <Link to="/support" className="text-gray-700 hover:text-purple-600 transition-colors">Support</Link>
             <Link to="/contact" className="text-gray-700 hover:text-purple-600 transition-colors">Contact</Link>
           </div>
 
@@ -126,7 +126,7 @@ const Navbar = () => {
                     >
                       Wishlist
                     </Link>
-                    {currentUser.isAdmin && (
+                    {currentUser.role === 'admin' && (
                       <Link
                         to="/admin/dashboard"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50"
@@ -218,7 +218,7 @@ const Navbar = () => {
               Products
             </Link>
             <Link
-              to="/chat"
+              to="/support"
               className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50"
               onClick={() => setIsMenuOpen(false)}
             >
@@ -276,7 +276,7 @@ const Navbar = () => {
                   >
                     Wishlist
                   </Link>
-                  {currentUser.isAdmin && (
+                  {currentUser.role === 'admin' && (
                     <Link
                       to="/admin/dashboard"
                       className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50"

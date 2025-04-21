@@ -4,6 +4,7 @@ import AdminHeader from './components/AdminHeader';
 import AdminSidebar from './components/AdminSidebar';
 import ProductManagement from './components/ProductManagement';
 import UserManagement from './components/UserManagement';
+import AdminChatPage from './components/AdminChatPage';
 import Dashboard from './components/Dashboard';
 
 const AdminDashboard = ({ activeTab: initialActiveTab = 'dashboard' }) => {
@@ -40,6 +41,8 @@ const AdminDashboard = ({ activeTab: initialActiveTab = 'dashboard' }) => {
         return <ProductManagement />;
       case 'users':
         return <UserManagement />;
+      case 'chat':
+        return <AdminChatPage />;
       case 'settings':
         return (
           <div className="p-4">

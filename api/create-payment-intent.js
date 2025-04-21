@@ -1,17 +1,16 @@
+// api/create-payment-intent.js
 import Stripe from 'stripe';
 
 export default async function handler(req, res) {
-  // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // Initialize Stripe with your secret key from environment variables
-    // Make sure this environment variable is set in your Vercel deployment
-    const stripe = new Stripe(process.env.VITE_STRIPE_SECRET_KEY);
+    // Initialize Stripe with the secret key
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     
-    // Parse the request body
+    // Get data from the request body
     const { amount, currency = 'usd', metadata = {} } = req.body;
     
     // Validate the amount
@@ -29,7 +28,7 @@ export default async function handler(req, res) {
       },
     });
     
-    // Return the client secret so the frontend can use it to complete the payment
+    // Return the client secret so the frontend can use it
     res.status(200).json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,

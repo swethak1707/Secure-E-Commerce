@@ -65,7 +65,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, handleLogout }) => {
           {navItems.map((item) => (
             <li key={item.id}>
               <Link
-                to={`/admin/${item.id === 'dashboard' ? 'dashboard' : item.id}`}
+                to={`/admin/${item.id}`}
                 className={`flex items-center w-full px-4 py-3 rounded-lg transition-all duration-200 ${
                   activeTab === item.id
                     ? 'bg-white text-purple-800 shadow-md transform scale-105 font-semibold'
