@@ -1,46 +1,41 @@
-// api/create-payment-intent.js
-import Stripe from 'stripe';
-
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
+const createPaymentIntent = async (amount, metadata = {}) => {
+  setProcessing(true);
+  setError(null);
+  
   try {
-    // Initialize Stripe with the secret key
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    console.log(`Creating payment intent for amount: $${amount}`);
     
-    // Get data from the request body
-    const { amount, currency = 'usd', metadata = {} } = req.body;
+    // Use a relative URL that works in any environment
+    const response = await fetch('/api/create-payment-intent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        amount, 
+        currency: 'usd',
+        metadata 
+      }),
+    });
     
-    // Validate the amount
-    if (!amount || isNaN(amount) || amount <= 0) {
-      return res.status(400).json({ error: 'Valid amount is required' });
+    // Handle non-OK responses
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Payment service error: ${response.status} ${errorText}`);
     }
     
-    // Create a PaymentIntent with the order amount and currency
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents for Stripe
-      currency,
-      metadata,
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    });
+    // Parse JSON response
+    const data = await response.json();
+    console.log('Payment intent created successfully');
     
-    // Return the client secret so the frontend can use it
-    res.status(200).json({
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
-    });
+    setClientSecret(data.clientSecret);
+    setPaymentIntentId(data.paymentIntentId);
+    return data;
   } catch (error) {
     console.error('Error creating payment intent:', error);
-    
-    // Send a more detailed error message
-    res.status(500).json({ 
-      error: error.message || 'Payment service error', 
-      code: error.code,
-      type: error.type
-    });
+    setError(error.message || 'An error occurred while creating your payment.');
+    throw error;
+  } finally {
+    setProcessing(false);
   }
-}
+};

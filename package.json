@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "codespaces": "vite build && node server.js"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^3.6.0",
