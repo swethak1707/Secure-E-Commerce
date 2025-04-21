@@ -1,4 +1,3 @@
-// api/create-payment-intent.js
 import Stripe from 'stripe';
 
 export default async function handler(req, res) {
@@ -9,7 +8,7 @@ export default async function handler(req, res) {
 
   try {
     // Initialize Stripe with your secret key from environment variables
-    const stripe = new Stripe("sk_test_51RDwLDC6kaN0ZQg6Q8SFboeqVZGPCnVRqgjFvCAyHMcnMlamEHdCiGgZuVYjZPi1rlBSKbBe5veH3UXlRH6KmyEM00mGycXHlQ");
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     
     // Parse the request body
     const { amount, currency = 'usd', metadata = {} } = req.body;

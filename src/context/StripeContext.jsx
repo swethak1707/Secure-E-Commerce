@@ -7,7 +7,7 @@ import { Elements } from '@stripe/react-stripe-js';
 const StripeContext = createContext();
 
 // Get the Stripe publishable key from environment variables
-const stripePromise = loadStripe("pk_test_51RDwLDC6kaN0ZQg6iWWQPinikk7fgBMj28EWSQEHjpm1B9BsRfklIEZ7dcD4UluCnmq0ZF2ycxtotvx5T9GLQsyw001GQxMSQl");
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY);
 
 export const StripeProvider = ({ children }) => {
   const [clientSecret, setClientSecret] = useState('');
