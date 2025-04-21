@@ -14,13 +14,13 @@ import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAE6J8JdL_C8y4uWqB7vlVouUBypD9K5zY",
-  authDomain: "ecommerce-ateam.firebaseapp.com",
-  projectId: "ecommerce-ateam",
-  storageBucket: "ecommerce-ateam.firebasestorage.app",
-  messagingSenderId: "784510708276",
-  appId: "1:784510708276:web:7859db6f6fa0cc0c9f7861",
-  measurementId: "G-6C1KMRKYJE"
+  apiKey: "AIzaSyBoVrh7HVM1LELGq8wMLQLe-jATGrlJsoc",
+  authDomain: "e-commerce-89693.firebaseapp.com",
+  projectId: "e-commerce-89693",
+  storageBucket: "e-commerce-89693.firebasestorage.app",
+  messagingSenderId: "512184527958",
+  appId: "1:512184527958:web:93508a1b1611582f0a9ff7",
+  measurementId: "G-DP3554KC02"
 };
 
 // Initialize Firebase
