@@ -7,7 +7,7 @@ const StripeContext = createContext();
 
 // Get the Stripe publishable key from environment variables
 // In Vite, we use import.meta.env instead of process.env
-const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const stripePublishableKey = import.meta.env.STRIPE_PUBLISHABLE_KEY;
 if (!stripePublishableKey) {
   console.error('Missing Stripe publishable key. Please check your environment variables.');
 }
