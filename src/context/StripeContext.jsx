@@ -7,7 +7,7 @@ const StripeContext = createContext();
 
 // Get the Stripe publishable key from environment variables
 // In Vite, we use import.meta.env instead of process.env
-const stripePublishableKey = import.meta.env.STRIPE_PUBLISHABLE_KEY;
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 if (!stripePublishableKey) {
   console.error('Missing Stripe publishable key. Please check your environment variables.');
 }
@@ -49,28 +49,35 @@ export const StripeProvider = ({ children }) => {
         }),
       });
       
-      // Improved error handling
+      // Check if response is OK
       if (!response.ok) {
-        const errorText = await response.text();
         let errorMessage;
         try {
           // Try to parse as JSON
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.error || 'Unknown error occurred';
+          const errorData = await response.json();
+          errorMessage = errorData.error || `HTTP error! Status: ${response.status}`;
         } catch {
           // If not JSON, use text response
-          errorMessage = errorText || `HTTP error! status: ${response.status}`;
+          const errorText = await response.text();
+          errorMessage = errorText || `HTTP error! Status: ${response.status}`;
         }
         throw new Error(errorMessage);
       }
       
+      // Parse JSON response
       const data = await response.json();
+      
+      // Validate response data
+      if (!data || !data.clientSecret) {
+        throw new Error('Invalid response from payment server');
+      }
+      
       setClientSecret(data.clientSecret);
       setPaymentIntentId(data.paymentIntentId);
       return data;
     } catch (error) {
       console.error('Error creating payment intent:', error);
-      setError(error.message);
+      setError(error.message || 'An error occurred while creating your payment. Please try again.');
       throw error;
     } finally {
       setProcessing(false);
@@ -84,7 +91,7 @@ export const StripeProvider = ({ children }) => {
   };
 
   // Set up Stripe elements options
-  const options = {
+  const options = clientSecret ? {
     clientSecret,
     appearance: {
       theme: 'stripe',
@@ -94,7 +101,7 @@ export const StripeProvider = ({ children }) => {
         colorText: '#30313d',
       },
     },
-  };
+  } : {};
 
   // Value to be provided by the context
   const value = {

@@ -8,7 +8,9 @@ import {
   where, 
   updateDoc, 
   doc, 
-  deleteDoc 
+  deleteDoc,
+  writeBatch,
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase.config';
 import { useAuth } from './AuthContext';
@@ -134,14 +136,14 @@ export const CartProvider = ({ children }) => {
           await addDoc(cartRef, {
             userId: currentUser.uid,
             items: updatedCart,
-            updatedAt: new Date()
+            updatedAt: serverTimestamp()
           });
         } else {
           // Update existing cart document
           const cartDoc = querySnapshot.docs[0];
           await updateDoc(doc(db, 'carts', cartDoc.id), {
             items: updatedCart,
-            updatedAt: new Date()
+            updatedAt: serverTimestamp()
           });
         }
       }
@@ -171,7 +173,7 @@ export const CartProvider = ({ children }) => {
           const cartDoc = querySnapshot.docs[0];
           await updateDoc(doc(db, 'carts', cartDoc.id), {
             items: updatedCart,
-            updatedAt: new Date()
+            updatedAt: serverTimestamp()
           });
         }
       }
@@ -211,7 +213,7 @@ export const CartProvider = ({ children }) => {
           const cartDoc = querySnapshot.docs[0];
           await updateDoc(doc(db, 'carts', cartDoc.id), {
             items: updatedCart,
-            updatedAt: new Date()
+            updatedAt: serverTimestamp()
           });
         }
       }
@@ -253,9 +255,12 @@ export const CartProvider = ({ children }) => {
     if (cartItems.length === 0) return false;
     
     try {
-      // For each item in cart, we need to check current stock and update it
+      // Create a batch to ensure all operations succeed or fail together
+      const batch = writeBatch(db);
+      
+      // Check each item's stock before proceeding
       for (const item of cartItems) {
-        // Get current product stock - FIXED HERE
+        // Get current product stock
         const productRef = doc(db, 'products', item.id);
         const productSnap = await getDoc(productRef);
         
@@ -270,26 +275,31 @@ export const CartProvider = ({ children }) => {
         }
         
         // Update product stock (subtract purchased quantity)
-        await updateDoc(productRef, {
+        batch.update(productRef, {
           stock: currentStock - item.quantity
         });
       }
       
       // Create order record
+      let orderId = null;
       if (currentUser) {
-        await addDoc(collection(db, 'orders'), {
+        const orderRef = await addDoc(collection(db, 'orders'), {
           userId: currentUser.uid,
           items: cartItems,
           total: cartTotal,
           status: 'pending',
-          createdAt: new Date()
+          createdAt: serverTimestamp()
         });
+        orderId = orderRef.id;
       }
+      
+      // Commit all the batched operations
+      await batch.commit();
       
       // Clear cart after successful checkout
       await clearCart();
       
-      return true;
+      return orderId;
     } catch (error) {
       console.error('Checkout failed:', error);
       throw error;
@@ -337,13 +347,13 @@ export const CartProvider = ({ children }) => {
       if (cartDocId) {
         await updateDoc(doc(db, 'carts', cartDocId), {
           items: mergedCart,
-          updatedAt: new Date()
+          updatedAt: serverTimestamp()
         });
       } else {
         await addDoc(cartRef, {
           userId: currentUser.uid,
           items: mergedCart,
-          updatedAt: new Date()
+          updatedAt: serverTimestamp()
         });
       }
 

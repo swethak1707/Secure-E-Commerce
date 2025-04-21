@@ -8,7 +8,8 @@ export default async function handler(req, res) {
 
   try {
     // Initialize Stripe with your secret key from environment variables
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    // Make sure this environment variable is set in your Vercel deployment
+    const stripe = new Stripe(process.env.VITE_STRIPE_SECRET_KEY);
     
     // Parse the request body
     const { amount, currency = 'usd', metadata = {} } = req.body;
@@ -35,6 +36,12 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Error creating payment intent:', error);
-    res.status(500).json({ error: error.message });
+    
+    // Send a more detailed error message
+    res.status(500).json({ 
+      error: error.message || 'Payment service error', 
+      code: error.code,
+      type: error.type
+    });
   }
 }

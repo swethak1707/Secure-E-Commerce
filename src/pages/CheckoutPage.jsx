@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase.config';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -73,31 +73,40 @@ const CheckoutPage = () => {
         throw new Error('Please fill in all required fields');
       }
       
+      // Calculate total with tax
+      const totalWithTax = cartTotal + (cartTotal * 0.1);
+      
       // Create order document in Firestore
       const orderData = {
         userId: currentUser?.uid,
         userEmail: formData.email,
         items: cartItems,
-        total: cartTotal + (cartTotal * 0.1), // Including tax
+        total: totalWithTax,
         shipping: formData,
         status: 'pending',
         createdAt: serverTimestamp()
       };
       
+      // Create new order document
       const orderRef = await addDoc(collection(db, 'orders'), orderData);
       setOrderId(orderRef.id);
       
       // Create payment intent with Stripe
-      await createPaymentIntent(
-        cartTotal + (cartTotal * 0.1), // Total with tax
+      const paymentIntentResponse = await createPaymentIntent(
+        totalWithTax, // Total with tax
         { 
           orderId: orderRef.id,
           userId: currentUser?.uid || 'guest'
         }
       );
       
-      // Move to payment step
-      setFormStep(2);
+      // Check if we have a valid response with clientSecret before proceeding
+      if (paymentIntentResponse && paymentIntentResponse.clientSecret) {
+        // Move to payment step
+        setFormStep(2);
+      } else {
+        throw new Error('Failed to create payment intent. Please try again.');
+      }
     } catch (err) {
       console.error('Error during checkout:', err);
       setError(err.message || 'An error occurred during checkout. Please try again.');
