@@ -1,4 +1,3 @@
-// src/context/StripeContext.jsx
 import { createContext, useContext, useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
@@ -7,7 +6,14 @@ import { Elements } from '@stripe/react-stripe-js';
 const StripeContext = createContext();
 
 // Get the Stripe publishable key from environment variables
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY);
+// In Vite, we use import.meta.env instead of process.env
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+if (!stripePublishableKey) {
+  console.error('Missing Stripe publishable key. Please check your environment variables.');
+}
+
+// Initialize Stripe
+const stripePromise = loadStripe(stripePublishableKey);
 
 export const StripeProvider = ({ children }) => {
   const [clientSecret, setClientSecret] = useState('');
@@ -43,9 +49,19 @@ export const StripeProvider = ({ children }) => {
         }),
       });
       
+      // Improved error handling
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create payment intent');
+        const errorText = await response.text();
+        let errorMessage;
+        try {
+          // Try to parse as JSON
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || 'Unknown error occurred';
+        } catch {
+          // If not JSON, use text response
+          errorMessage = errorText || `HTTP error! status: ${response.status}`;
+        }
+        throw new Error(errorMessage);
       }
       
       const data = await response.json();
@@ -89,6 +105,7 @@ export const StripeProvider = ({ children }) => {
     error,
     succeeded,
     paymentIntentId,
+    clientSecret
   };
 
   return (

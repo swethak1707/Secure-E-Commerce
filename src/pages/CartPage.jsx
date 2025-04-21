@@ -8,7 +8,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
 const CartPage = () => {
-  const { cartItems, cartTotal, loading, removeFromCart, updateCartItemQuantity, clearCart, checkout } = useCart();
+  const { cartItems, cartTotal, loading, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   
@@ -29,7 +29,7 @@ const CartPage = () => {
       
       try {
         for (const item of cartItems) {
-          // Get current product stock
+          // Fixed: Get current product stock using getDoc() instead of .get()
           const productDocRef = doc(db, 'products', item.id);
           const productSnap = await getDoc(productDocRef);
           

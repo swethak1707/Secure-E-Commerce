@@ -6,7 +6,7 @@ import {
 } from '@stripe/react-stripe-js';
 import { useStripe } from '../context/StripeContext';
 import { useNavigate } from 'react-router-dom';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase.config';
 
 const PaymentForm = ({ orderId, total }) => {
@@ -50,7 +50,8 @@ const PaymentForm = ({ orderId, total }) => {
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         // Payment succeeded without redirect - update order in Firestore
         try {
-          await updateDoc(doc(db, 'orders', orderId), {
+          const orderRef = doc(db, 'orders', orderId);
+          await updateDoc(orderRef, {
             status: 'paid',
             paymentIntentId: paymentIntent.id,
             updatedAt: new Date()

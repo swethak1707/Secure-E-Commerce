@@ -255,7 +255,7 @@ export const CartProvider = ({ children }) => {
     try {
       // For each item in cart, we need to check current stock and update it
       for (const item of cartItems) {
-        // Get current product stock
+        // Get current product stock - FIXED HERE
         const productRef = doc(db, 'products', item.id);
         const productSnap = await getDoc(productRef);
         
