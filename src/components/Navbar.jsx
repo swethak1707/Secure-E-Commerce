@@ -1,323 +1,258 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useCart } from '../context/CartContext';
+// src/components/Navbar.jsx
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
+import { useShop } from '../contexts/ShopContext';
+import { 
+  Bars3Icon, 
+  ShoppingCartIcon, 
+  MagnifyingGlassIcon, 
+  UserIcon, 
+  HeartIcon, 
+  SunIcon, 
+  MoonIcon 
+} from '@heroicons/react/24/outline';
 
 const Navbar = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const { currentUser, logout } = useAuth();
-  const { cartCount } = useCart();
-  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const { cartItems } = useCart();
+  const { searchProducts } = useShop();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Handle scroll effect for navbar
-  useEffect(() => {
-    const handleScroll = () => {
-      const offset = window.scrollY;
-      if (offset > 50) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
-
-  // Handle logout
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/');
-    } catch (error) {
-      console.error('Failed to log out', error);
+  const toggleDarkMode = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
     }
   };
 
-  // Toggle mobile menu
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-
-  // Toggle account menu
-  const toggleAccountMenu = () => {
-    setIsAccountMenuOpen(!isAccountMenuOpen);
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      searchProducts(searchTerm);
+      setSearchTerm('');
+    }
   };
 
   return (
-    <nav className={`fixed top-0 inset-x-0 z-50 ${isScrolled ? 'bg-white shadow-md' : 'bg-white'} transition-all duration-300`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-20">
+    <header className="bg-white dark:bg-gray-800 shadow">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex-shrink-0 flex items-center">
-            <Link to="/" className="font-bold text-2xl text-purple-600">ShopSquare</Link>
-          </div>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex md:items-center md:space-x-8">
-            <Link to="/" className="text-gray-700 hover:text-purple-600 transition-colors">Home</Link>
-            <Link to="/products" className="text-gray-700 hover:text-purple-600 transition-colors">Products</Link>
-            <Link to="/support" className="text-gray-700 hover:text-purple-600 transition-colors">Support</Link>
-            <Link to="/contact" className="text-gray-700 hover:text-purple-600 transition-colors">Contact</Link>
-          </div>
-
-          {/* Desktop Right Navigation */}
-          <div className="hidden md:flex md:items-center md:space-x-4">
-            {/* Cart Icon */}
-            <Link to="/cart" className="relative p-2 text-gray-700 hover:text-purple-600 transition-colors">
-              <svg className="h-6 w-6" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-              </svg>
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {cartCount}
-                </span>
-              )}
+          <div className="flex-shrink-0">
+            <Link to="/" className="flex items-center">
+              <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+                ShopMaster
+              </span>
             </Link>
-
-            {currentUser ? (
-              <div className="relative">
-                <button
-                  className="flex items-center text-gray-700 hover:text-purple-600 transition-colors focus:outline-none"
-                  onClick={toggleAccountMenu}
-                >
-                  {currentUser.photoURL ? (
-                    <img
-                      src={currentUser.photoURL}
-                      alt="User"
-                      className="h-8 w-8 rounded-full mr-1"
-                    />
-                  ) : (
-                    <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 mr-1">
-                      {currentUser.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                  )}
-                  <span className="hidden lg:block">{currentUser.displayName || 'User'}</span>
-                  <svg className="ml-1 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                  </svg>
-                </button>
-
-                {/* Account Dropdown */}
-                {isAccountMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                    <Link
-                      to="/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50"
-                      onClick={() => setIsAccountMenuOpen(false)}
-                    >
-                      Profile
-                    </Link>
-                    <Link
-                      to="/orders"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50"
-                      onClick={() => setIsAccountMenuOpen(false)}
-                    >
-                      Orders
-                    </Link>
-                    <Link
-                      to="/wishlist"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50"
-                      onClick={() => setIsAccountMenuOpen(false)}
-                    >
-                      Wishlist
-                    </Link>
-                    {currentUser.role === 'admin' && (
-                      <Link
-                        to="/admin/dashboard"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50"
-                        onClick={() => setIsAccountMenuOpen(false)}
-                      >
-                        Admin Dashboard
-                      </Link>
-                    )}
-                    <button
-                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                      onClick={() => {
-                        setIsAccountMenuOpen(false);
-                        handleLogout();
-                      }}
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <Link
-                  to="/login"
-                  className="px-4 py-2 border border-transparent rounded-md text-purple-600 hover:bg-purple-50 transition-colors"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="px-4 py-2 border border-transparent rounded-md bg-purple-600 text-white hover:bg-purple-700 transition-colors"
-                >
-                  Register
-                </Link>
-              </div>
-            )}
           </div>
-
-          {/* Mobile Menu Button */}
-          <div className="flex items-center md:hidden">
-            {/* Cart Icon for Mobile */}
-            <Link to="/cart" className="relative p-2 text-gray-700 hover:text-purple-600 transition-colors mr-2">
-              <svg className="h-6 w-6" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-              </svg>
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {cartCount}
+          
+          {/* Search */}
+          <div className="hidden md:block flex-1 max-w-md mx-4">
+            <form onSubmit={handleSearch} className="relative">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search products..."
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm text-gray-900 dark:text-white"
+              />
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              <button type="submit" className="sr-only">Search</button>
+            </form>
+          </div>
+          
+          {/* Actions */}
+          <div className="hidden md:flex items-center space-x-4">
+            <button
+              onClick={toggleDarkMode}
+              className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            >
+              {darkMode ? (
+                <SunIcon className="h-6 w-6" />
+              ) : (
+                <MoonIcon className="h-6 w-6" />
+              )}
+            </button>
+            
+            <Link
+              to="/favorites"
+              className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            >
+              <HeartIcon className="h-6 w-6" />
+            </Link>
+            
+            <Link
+              to="/checkout"
+              className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 relative"
+            >
+              <ShoppingCartIcon className="h-6 w-6" />
+              {cartItems.length > 0 && (
+                <span className="absolute top-0 right-0 -mt-1 -mr-1 px-2 py-1 rounded-full text-xs font-bold bg-indigo-600 text-white">
+                  {cartItems.length}
                 </span>
               )}
             </Link>
             
+            {user ? (
+              <div className="relative inline-block text-left">
+                <Link
+                  to="/account"
+                  className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  {user.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt="Profile"
+                      className="h-8 w-8 rounded-full"
+                    />
+                  ) : (
+                    <UserIcon className="h-6 w-6" />
+                  )}
+                </Link>
+              </div>
+            ) : (
+              <Link
+                to="/auth"
+                className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300"
+              >
+                Log in
+              </Link>
+            )}
+          </div>
+          
+          {/* Mobile menu button */}
+          <div className="flex md:hidden">
             <button
-              type="button"
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-purple-600 hover:bg-purple-50 focus:outline-none"
-              onClick={toggleMenu}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             >
-              <span className="sr-only">Open main menu</span>
-              {isMenuOpen ? (
-                <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              )}
+              <Bars3Icon className="h-6 w-6" />
             </button>
           </div>
         </div>
       </div>
-
-      {/* Mobile Menu */}
-      {isMenuOpen && (
-        <div className="md:hidden bg-white shadow-lg">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+      
+      {/* Mobile Search & Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden py-3 px-4 border-t border-gray-200 dark:border-gray-700">
+          <form onSubmit={handleSearch} className="mb-4">
+            <input
+              // src/components/Navbar.jsx (continued)
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search products..."
+              className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm text-gray-900 dark:text-white"
+            />
+            <button 
+              type="submit" 
+              className="mt-2 w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700"
+            >
+              Search
+            </button>
+          </form>
+          
+          <div className="space-y-2">
             <Link
               to="/"
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50"
-              onClick={() => setIsMenuOpen(false)}
+              className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={() => setMobileMenuOpen(false)}
             >
               Home
             </Link>
             <Link
-              to="/products"
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50"
-              onClick={() => setIsMenuOpen(false)}
+              to="/categories"
+              className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={() => setMobileMenuOpen(false)}
             >
-              Products
+              Categories
             </Link>
             <Link
-              to="/support"
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50"
-              onClick={() => setIsMenuOpen(false)}
+              to="/favorites"
+              className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={() => setMobileMenuOpen(false)}
             >
-              Support
+              Favorites
             </Link>
             <Link
-              to="/contact"
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50"
-              onClick={() => setIsMenuOpen(false)}
+              to="/checkout"
+              className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={() => setMobileMenuOpen(false)}
             >
-              Contact
+              Cart ({cartItems.length})
             </Link>
-          </div>
-
-          {/* Mobile account menu */}
-          <div className="pt-4 pb-3 border-t border-gray-200">
-            {currentUser ? (
-              <div>
-                <div className="flex items-center px-4">
-                  {currentUser.photoURL ? (
-                    <img
-                      src={currentUser.photoURL}
-                      alt="User"
-                      className="h-10 w-10 rounded-full mr-3"
-                    />
-                  ) : (
-                    <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 mr-3">
-                      {currentUser.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                  )}
-                  <div>
-                    <div className="text-base font-medium text-gray-800">{currentUser.displayName || 'User'}</div>
-                    <div className="text-sm font-medium text-gray-500">{currentUser.email}</div>
-                  </div>
-                </div>
-                <div className="mt-3 space-y-1">
-                  <Link
-                    to="/profile"
-                    className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Profile
-                  </Link>
-                  <Link
-                    to="/orders"
-                    className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Orders
-                  </Link>
-                  <Link
-                    to="/wishlist"
-                    className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Wishlist
-                  </Link>
-                  {currentUser.role === 'admin' && (
-                    <Link
-                      to="/admin/dashboard"
-                      className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Admin Dashboard
-                    </Link>
-                  )}
-                  <button
-                    className="block w-full text-left px-4 py-2 text-base font-medium text-red-600 hover:bg-red-50"
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      handleLogout();
-                    }}
-                  >
-                    Logout
-                  </button>
-                </div>
-              </div>
+            
+            {user ? (
+              <>
+                <Link
+                  to="/account"
+                  className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  My Account
+                </Link>
+                <Link
+                  to="/orders"
+                  className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  My Orders
+                </Link>
+                <button
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="block w-full text-left px-3 py-2 rounded-md text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                >
+                  Logout
+                </button>
+              </>
             ) : (
-              <div className="px-4 flex flex-col space-y-2">
-                <Link
-                  to="/login"
-                  className="block text-center px-4 py-2 text-base font-medium text-purple-600 border border-purple-600 rounded-md hover:bg-purple-50"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="block text-center px-4 py-2 text-base font-medium text-white bg-purple-600 border border-transparent rounded-md hover:bg-purple-700"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Register
-                </Link>
-              </div>
+              <Link
+                to="/auth"
+                className="block px-3 py-2 rounded-md text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Log in / Sign up
+              </Link>
             )}
+            
+            <button
+              onClick={() => {
+                toggleDarkMode();
+                setMobileMenuOpen(false);
+              }}
+              className="flex items-center w-full px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              {darkMode ? (
+                <>
+                  <SunIcon className="h-5 w-5 mr-2" />
+                  <span>Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <MoonIcon className="h-5 w-5 mr-2" />
+                  <span>Dark Mode</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}
-    </nav>
+    </header>
   );
 };
 

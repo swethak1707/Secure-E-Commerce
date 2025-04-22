@@ -1,116 +1,92 @@
 // src/App.jsx
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { CartProvider } from './context/CartContext';
-import { WishlistProvider } from './context/WishlistContext';
-import { StripeProvider } from './context/StripeContext'; // Add the Stripe Provider
-import { ProtectedRoute, AdminRoute } from './components/ProtectedRoutes';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 
-// Public Pages
-import LandingPage from "./pages/LadingPage";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import NotFoundPage from './pages/NotFoundPage';
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ProductView from "./pages/ProductView";
-import ProductsPage from "./pages/ProductsPage";
-import CartPage from "./pages/CartPage";
-import WishlistPage from "./pages/WishlistPage";
-import AdminDashboard from './pages/admin/AdminDashboard';
-import ChatPage from './pages/ChatPage';
-import OrdersPage from './pages/OrdersPage';
-import CheckoutPage from './pages/CheckoutPage'; // Add the new Checkout page
-import PaymentSuccessPage from './pages/PaymentSuccessPage'; // Add the Payment Success page
-import ProfilePage from './pages/ProfilePage';
+// Context Providers
+import { AuthProvider } from './contexts/AuthContext';
+import { ShopProvider } from './contexts/ShopContext';
+import { CartProvider } from './contexts/CartContext';
+
+// Layouts
+import MainLayout from './layouts/MainLayout';
+
+// Pages
+import Home from './pages/Home';
+import Auth from './pages/Auth';
+import NotFound from './pages/NotFound';
+import ProductDetails from './pages/ProductDetails';
+import Checkout from './pages/Checkout';
+import Success from './pages/Success';
+import MyAccount from './pages/MyAccount';
+import Favorites from './pages/Favorites';
+import AdminPanel from './pages/AdminPanel';
+import CategoryPage from './pages/CategoryPage';
+import SearchResults from './pages/SearchResults';
+import OrderHistory from './pages/OrderHistory';
+
+// Route Guards
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 
 function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <WishlistProvider>
-          <StripeProvider>
-            <BrowserRouter>
-              <Routes>
+    <Router>
+      <AuthProvider>
+        <ShopProvider>
+          <CartProvider>
+            <Toaster position="top-right" />
+            <Routes>
+              <Route path="/" element={<MainLayout />}>
                 {/* Public Routes */}
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/products" element={<ProductsPage />} />
-                <Route path="/product/:id" element={<ProductView />} />
-                <Route path="/cart" element={<CartPage />} />
+                <Route index element={<Home />} />
+                <Route path="auth" element={<Auth />} />
+                <Route path="product/:id" element={<ProductDetails />} />
+                <Route path="categories/:id" element={<CategoryPage />} />
+                <Route path="search" element={<SearchResults />} />
                 
-                {/* Protected User Routes */}
-                <Route path="/profile" element={
+                {/* Protected Routes - require authentication */}
+                <Route path="checkout" element={
                   <ProtectedRoute>
-                    <ProfilePage />
+                    <Checkout />
                   </ProtectedRoute>
                 } />
-                
-                <Route path="/wishlist" element={
+                <Route path="success" element={
                   <ProtectedRoute>
-                    <WishlistPage />
+                    <Success />
                   </ProtectedRoute>
                 } />
-                <Route path='/support' element={
+                <Route path="account" element={
                   <ProtectedRoute>
-                    <ChatPage />
+                    <MyAccount />
                   </ProtectedRoute>
                 } />
-                <Route path='/orders' element={
+                <Route path="favorites" element={
                   <ProtectedRoute>
-                    <OrdersPage />
+                    <Favorites />
                   </ProtectedRoute>
                 } />
-                
-                {/* Checkout and Payment Routes */}
-                <Route path="/checkout" element={
+                <Route path="orders" element={
                   <ProtectedRoute>
-                    <CheckoutPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/payment-success" element={
-                  <ProtectedRoute>
-                    <PaymentSuccessPage />
+                    <OrderHistory />
                   </ProtectedRoute>
                 } />
                 
-                {/* Protected Admin Routes */}
-                <Route path="/admin/dashboard" element={
+                {/* Admin Routes - require admin privileges */}
+                <Route path="admin/*" element={
                   <AdminRoute>
-                    <AdminDashboard activeTab="dashboard" />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/products" element={
-                  <AdminRoute>
-                    <AdminDashboard activeTab="products" />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/users" element={
-                  <AdminRoute>
-                    <AdminDashboard activeTab="users" />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/chat" element={
-                  <AdminRoute>
-                    <AdminDashboard activeTab="chat" />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/settings" element={
-                  <AdminRoute>
-                    <AdminDashboard activeTab="settings" />
+                    <AdminPanel />
                   </AdminRoute>
                 } />
                 
-                {/* 404 Route */}
-                <Route path="*" element={<NotFoundPage />} />
-              </Routes>
-            </BrowserRouter>
-          </StripeProvider>
-        </WishlistProvider>
-      </CartProvider>
-    </AuthProvider>
+                {/* 404 Page */}
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+          </CartProvider>
+        </ShopProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
